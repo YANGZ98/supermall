@@ -17,7 +17,7 @@ export default {
   name: 'TabControl',
   data() {
     return {
-      currentIndex: 0
+      currentIndex:0
     }
   },
   props: {
@@ -26,6 +26,15 @@ export default {
       default() {
         return []
       }
+    },
+    tabIndex:{
+      type:Number,
+      default:0
+    }
+  },
+  watch: {
+    tabIndex(){
+      this.currentIndex = this.tabIndex
     }
   },
   methods: {

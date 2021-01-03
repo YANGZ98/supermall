@@ -3,20 +3,38 @@
     <nav-bar class="home-nav">
       <div slot="center">购物街</div>
     </nav-bar>
-    <scroll class="scroll" ref="scroll">
-      <home-swiper :banners="banners" />
+    <tab-control
+        class="tab-control"
+        v-show="isTabFixed"
+        :tabIndex = "tabIndex"
+        :titles="['流行','新款','精选']"
+        @tabClick="tabClick"
+      />
+    <scroll
+      class="scroll"
+      ref="scroll"
+      :probeType="3"
+      @scroll="scroll"
+      :pull-up-load="true"
+      @pullUpLoad="pullUpLoad"
+    >
+      <home-swiper :banners="banners" @swiperImageLoad="swiperImageLoad" />
       <recommend-view :recommends="recommends" />
       <feature-view />
-      <tab-control class="tab-control" :titles="['流行','新款','精选']" @tabClick="tabClick" />
-      <goods-list v-show="tabIndex===0" :goods="goods.pop.list" />
-      <goods-list v-show="tabIndex===1" :goods="goods.new.list" />
-      <goods-list v-show="tabIndex===2" :goods="goods.sell.list" />
+      <tab-control
+        :titles="['流行','新款','精选']"
+        :tabIndex = "tabIndex"
+        @tabClick="tabClick"
+        ref="tabControl"
+      />
+      <goods-list :goods="goodsShow" key="pop" />
     </scroll>
-    <TopBack @click.native="TopBack"/>
+    <TopBack @click.native="TopBack" v-show="backTopShow" />
   </div>
 </template>
 
 <script>
+import {debounce} from '@/common/util'
 import { getHomeMultidata, getHomeGoods } from 'network/home'
 
 import Scroll from 'components/common/scroll/Scroll'
@@ -39,17 +57,33 @@ export default {
         new: { page: 0, list: [] },
         sell: { page: 0, list: [] }
       },
-      tabIndex: 0
+      tabIndex: 0,
+      tabType: 'pop',
+      backTopShow: false,
+      tabControlTop: 0,
+      isTabFixed: false
+    }
+  },
+  computed: {
+    goodsShow() {
+      return this.goods[this.tabType].list
     }
   },
   created() {
     //1.请求首页数据
     this.getHomeMultidata()
     //2.请求商品数据
-    this.getHomeGoods('pop')
-    this.getHomeGoods('new')
-    this.getHomeGoods('sell')
+    this.getHomeGoods(0)
+    this.getHomeGoods(1)
+    this.getHomeGoods(2)
 
+  },
+  mounted() {
+    //3.注册图片加载完成事件
+    const refresh = debounce(this.$refs.scroll.refresh, 200)
+    this.$bus.$on('itemImgLoad', () => {
+      refresh()
+    })
   },
   methods: {
     /**
@@ -57,10 +91,33 @@ export default {
      */
     tabClick(index) {
       this.tabIndex = index
+      switch (this.tabIndex) {
+        case 0:
+          this.tabType = 'pop'
+          break;
+        case 1:
+          this.tabType = 'new'
+          break;
+        case 2:
+          this.tabType = 'sell'
+          break;
+      }
     },
-    TopBack(){
+    TopBack() {
       //通过refs 调用组件中的.scroll 的scrollTo方法
-      this.$refs.scroll.scroll.scrollTo(0,0,500)
+      this.$refs.scroll.scrollTo(0, 0, 500)
+    },
+    scroll(position) {
+      this.isTabFixed = (-position.y) > this.tabControlTop
+      // console.log(position);
+      this.backTopShow = (-position.y) > 1000
+    },
+    pullUpLoad() {
+      // console.log('上拉加载更多');
+      this.getHomeGoods(this.tabIndex)
+    },
+    swiperImageLoad() {
+      this.tabControlTop = this.$refs.tabControl.$el.offsetTop
     },
     /**
      * 网络请求
@@ -72,13 +129,32 @@ export default {
         this.recommends = res.data.recommend.list
       })
     },
-    getHomeGoods(type) {
+    getHomeGoods(index) {
+      let type = ''
+      switch (index) {
+        case 0:
+          type = 'pop'
+          break;
+        case 1:
+          type = 'new'
+          break;
+        case 2:
+          type = 'sell'
+          break;
+      }
+      console.log(type)
       const page = this.goods[type].page + 1
       getHomeGoods(type, page).then(res => {
         this.goods[type].list.push(...res.data.list)
         this.goods[type].page += 1
+        this.$refs.scroll.finishPullUp()
       })
     }
+  },
+  activated () {
+    console.log('activated');
+    
+    this.$refs.scroll.refresh()
   },
   components: {
     Scroll,
@@ -105,25 +181,25 @@ export default {
   margin-top: 44px;
   overflow: hidden;
 } */
-.scroll{
+.scroll {
   position: absolute;
   top: 44px;
   bottom: 49px;
   left: 0;
   right: 0;
+  overflow: hidden;
 }
 .home-nav {
   background: var(--color-tint);
   color: #fff;
-  position: fixed;
+  /* position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9;
+  z-index: 9; */
 }
 .tab-control {
-  position: sticky;
-  top: 44px;
+  position: relative;
   z-index: 9;
 }
 </style>

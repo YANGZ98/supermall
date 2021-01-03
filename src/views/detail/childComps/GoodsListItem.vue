@@ -1,33 +1,23 @@
 <template>
-  <div class="goods-list">
-    <div class="goods-item" v-for="(item, index) in goods" :key="index" @click="toDetail(item)">
-      <img v-lazy="imgShow(item)" alt @load="imgLoad" />
-      <div class="goods-info">
-        <div class="goods-title">{{item.title}}</div>
-        <span class="goods-price">{{item.price}}</span>
-        <span class="goods-cfav">{{item.cfav}}</span>
-      </div>
+  <div class="goods-item" @click="toDetail(goods)">
+    <img v-lazy="goods.image" alt @load="imgLoad" />
+    <div class="goods-info">
+      <div class="goods-title">{{goods.title}}</div>
+      <span class="goods-price">{{goods.price}}</span>
+      <span class="goods-cfav">{{goods.cfav}}</span>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'GoodsList',
+  name: 'GoodsListItem',
   props: {
     goods: {
-      type: Array,
+      type: Object,
       default() {
-        return []
+        return {}
       }
-    }
-  },
-  computed: {
-    imgShow(val) {
-      return function (val) {
-        return val.show?val.show.img:val.image?val.image:val.img
-      }
-
     }
   },
   methods: {
@@ -35,10 +25,11 @@ export default {
       this.$bus.$emit('itemImgLoad')
     },
     toDetail(goods) {
-      this.$router.push('/detail/' + goods.iid)
+      console.log(goods.item_id);
+      this.$router.push('/detail/' + goods.item_id)
 
     }
-  },
+  }
 }
 </script>
 <style>

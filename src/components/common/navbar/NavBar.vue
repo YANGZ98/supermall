@@ -30,11 +30,12 @@
   display: flex;
   line-height: 44px;
   height: 44px;
-  align-content: center;
-  box-shadow: 0px 1px 1px rgba(100, 100, 100, .1)
+  box-shadow: 0px 1px 1px rgba(100, 100, 100, .1);
+  
 }
 .left,.right{
   width: 60px;
+  text-align: center;
 }
 .center{
   flex: 1;
